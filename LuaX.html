@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuaX Studio - IA de Roblox</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0c0c0e;
+            color: #e1e1e6;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        aside {
+            width: 280px;
+            background-color: #141417;
+            border-right: 1px solid #222226;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .logo-area {
+            font-size: 26px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            user-select: none;
+        }
+        .logo-lua { color: #f4e8c1; text-shadow: 0 0 10px rgba(244, 232, 193, 0.6); }
+        .logo-x {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            color: #55555e;
+            text-shadow: 2px 2px 0px #222;
+            display: inline-block;
+            transform: scaleY(1.2) scaleX(1.1);
+            transform-origin: bottom left;
+            padding-right: 5px;
+        }
+
+        .btn-novo-chat { background: linear-gradient(135deg, #7b42bc, #522b80); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; }
+        .busca-chats { background-color: #1c1c22; border: 1px solid #2d2d35; padding: 8px 12px; border-radius: 6px; color: white; width: 100%; box-sizing: border-box; margin-bottom: 20px; outline: none; }
+        
+        .menu-links { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+        .item-menu { padding: 10px 12px; border-radius: 6px; cursor: pointer; color: #a3a3b2; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+        .item-menu:hover, .item-menu.ativo { background-color: #1c1c22; color: #9966cc; }
+        
+        .marca-powered {
+            font-size: 11px;
+            color: #4a4a5a;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .area-login-google { border-top: 1px solid #222226; padding-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn-google { background-color: #ffffff; color: #1f1f1f; border: none; padding: 10px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-size: 13px; }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #0c0c0e;
+            position: relative;
+        }
+
+        .palco-ia {
+            background-color: #101014;
+            border-bottom: 1px solid #1c1c22;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 25px;
+            min-height: 120px;
+            position: relative;
+        }
+
+        .texto-status { font-size: 14px; color: #8c8c9a; font-weight: 500; }
+
+        .wrapper-rosto {
+            position: relative;
+            width: 75px;
+            height: 85px;
+            display: none;
+        }
+
+        .face-roxa {
+            width: 100%; height: 100%; background-color: #14141a; border: 2px solid #9966cc;
+            border-radius: 40% 40% 50% 50%; box-shadow: 0 0 15px rgba(153, 102, 204, 0.3);
+            position: relative; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .sobrancelhas { display: flex; gap: 12px; position: absolute; top: 22px; }
+        .sobrancelha { width: 16px; height: 3px; background: #9966cc; border-radius: 2px; }
+        .olhos { display: flex; gap: 18px; position: absolute; top: 32px; }
+        .olho { width: 10px; height: 10px; background: #b380ff; border-radius: 50%; box-shadow: 0 0 10px #9966cc; }
+        .boca { width: 18px; height: 3px; background: #9966cc; position: absolute; bottom: 22px; border-radius: 2px; }
+
+        .tag-dono {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #ffdb58, #ff9900);
+            color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 10px;
+            box-shadow: 0 0 8px #ffdb58; text-transform: uppercase; display: none; white-space: nowrap;
+        }
+        .wrapper-rosto.mostrar-dono .tag-dono { display: block; }
+
+        .orbe-sistema { width: 50px; height: 40px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .bolinhas-container { display: none; gap: 5px; position: absolute; }
+        .bolinha-orbe { width: 8px; height: 8px; background: #9966cc; border-radius: 50%; box-shadow: 0 0 8px #9966cc; }
+        .lampada-orbe { font-size: 24px; display: none; filter: drop-shadow(0 0 10px #ffdb58); position: absolute; }
+
+        .container-mensagens { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 18px; position: relative; }
+        .balao { max-width: 75%; padding: 14px 18px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
+        .balao-user { background-color: #583ba3; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .balao-ia { background-color: #18181c; color: #e1e1e6; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #23232a; width: 100%; position: relative; }
+
+        .bloco-codigo-container { margin-top: 10px; background-color: #09090b; border-radius: 8px; border: 1px solid #2d2d35; overflow: hidden; position: relative; }
+        .codigo-header { background-color: #1c1c22; padding: 6px 15px; font-size: 12px; color: #a3a3b2; font-weight: bold; display: flex; justify-content: space-between; }
+        pre { margin: 0; padding: 15px; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; min-height: 30px; }
+
+        .caixa-entrada { background-color: #101014; padding: 20px; display: flex; gap: 12px; border-top: 1px solid #1c1c22; }
+        .caixa-entrada input { flex: 1; background-color: #1c1c22; border: 1px solid #2d2d35; padding: 14px 20px; border-radius: 30px; color: white; font-size: 15px; outline: none; }
+        .caixa-entrada button { background: #9966cc; color: white; border: none; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; }
+
+        .bloqueio-login {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(12, 12, 14, 0.95); z-index: 9999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            gap: 20px;
+        }
+        .caixa-bloqueio {
+            background-color: #141417; border: 1px solid #2d2d35; padding: 35px;
+            border-radius: 12px; text-align: center; box-shadow: 0 0 30px rgba(153, 102, 204, 0.2);
+            max-width: 400px;
+        }
+        .caixa-bloqueio h2 { margin: 0 0 10px 0; color: #fff; font-size: 22px; }
+        .caixa-bloqueio p { color: #a3a3b2; font-size: 14px; margin: 0 0 25px 0; }
+        .btn-fechar-bloqueio { background: none; border: none; color: #7c7c8a; cursor: pointer; font-size: 13px; margin-top: 15px; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="bloqueio-login" id="janelaLogin">
+        <div class="caixa-bloqueio">
+            <h2>Faça login para poder acessar</h2>
+            <p>A Biblioteca de scripts e o painel de configurações requerem autenticação segura em nuvem.</p>
+            <button class="btn-google" style="width: 100%; padding: 12px 0;" onclick="fazerLoginSimulado()">
+                <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/v6_web-24dp.svg" alt="Google" style="vertical-align: middle; margin-right: 8px;">
+                Entrar com o Google
+            </button>
+            <button class="btn-fechar-bloqueio" onclick="fecharBloqueio()">Voltar para o Chat</button>
+        </div>
+    </div>
+
+    <aside>
+        <div>
+            <div class="logo-area"><span class="logo-lua">🌕</span><span class="logo-x">X</span> Studio</div>
+            <button class="btn-novo-chat" onclick="location.reload()">＋ Novo Chat</button>
+            <input type="text" class="busca-chats" placeholder="Pesquisar chats salvos...">
+            <div class="menu-links">
+                <div class="item-menu ativo" id="btnChat">💬 Conversas Atuais</div>
+                <div class="item-menu" id="btnLibrary" onclick="verificarAcessoPro('Library')">📚 Library (Biblioteca)</div>
+                <div class="item-menu" id="btnConfig" onclick="verificarAcessoPro('Configurações')">⚙️ Configurações</div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="marca-powered">POWERED BY LUAX & GEMINI</div>
+            <div class="area-login-google">
+                <button class="btn-google" id="btnGooglePrincipal" onclick="abrirBloqueio()">Entrar com o Google</button>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <div class="palco-ia">
+            <div class="wrapper-rosto" id="wrapperLuaX">
+                <div class="tag-dono">Dono / Owner</div>
+                <div class="face-roxa">
+                    <div class="sobrancelhas">
+                        <div class="sobrancelha esq"></div>
+                        <div class="sobrancelha dir"></div>
+                    </div>
+                    <div class="olhos">
+                        <div class="olho" id="olhoEsq"></div>
+                        <div class="olho" id="olhoDir"></div>
+                    </div>
+                    <div class="boca" id="bocaIA"></div>
+                </div>
+            </div>
+
+            <div class="orbe-sistema">
+                <div class="bolinhas-container" id="orbeBolinhas">
+                    <div class="bolinha-orbe" style="transform: translateY(-12px);"></div>
+                    <div class="bolinha-orbe" style="transform: translateX(12px) translateY(6px);"></div>
+                    <div class="bolinha-orbe" style="transform: translateX(-12px) translateY(6px);"></div>
+                </div>
+                <div class="lampada-orbe" id="orbeLampada">💡</div>
+            </div>
+
+            <div class="texto-status" id="txtStatus">Aguardando mensagem na órbita...</div>
+        </div>
+
+        <div class="container-mensagens" id="chatContainer"></div>
+
+        <div class="caixa-entrada">
+            <input type="text" id="inputMsg" placeholder="Peça um script ou converse com o LuaX...">
+            <button onclick="dispararChat()">Enviar</button>
+        </div>
+    </main>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const inputMsg = document.getElementById('inputMsg');
+        const wrapperLuaX = document.getElementById('wrapperLuaX');
+        const orbeBolinhas = document.getElementById('orbeBolinhas');
+        const orbeLampada = document.getElementById('orbeLampada');
+        const txtStatus = document.getElementById('txtStatus');
+        const bocaIA = document.getElementById('bocaIA');
+        const janelaLogin = document.getElementById('janelaLogin');
+
+        let usuarioLogado = false;
+
+        function verificarAcessoPro(nomeAba) {
+            if(!usuarioLogado) { abrirBloqueio(); } 
+            else { alert(`Bem-vindo à aba ${nomeAba}! Acesso concedido ao Dono.`); }
+        }
+
+        function abrirBloqueio() { janelaLogin.style.display = "flex"; }
+        function fecharBloqueio() { janelaLogin.style.display = "none"; }
+
+        function fazerLoginSimulado() {
+            usuarioLogado = true;
+            fecharBloqueio();
+            document.getElementById('btnGooglePrincipal').innerText = "Conectado como Dono 👑";
+            document.getElementById('btnGooglePrincipal').style.background = "#ffdb58";
+            wrapperLuaX.classList.add('mostrar-dono');
+            txtStatus.innerText = "Acesso de Criador detectado. Olá, Dono!";
+        }
+
+        function dispararChat() {
+            const texto = inputMsg.value.trim();
+            if(texto === "") return;
+
+            const balaoUser = document.createElement('div');
+            balaoUser.className = 'balao balao-user';
+            balaoUser.innerText = texto;
+            chatContainer.appendChild(balaoUser);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            inputMsg.value = "";
+
+            const eComando = texto.startsWith('!');
+            const querCodigo = !eComando && (texto.toLowerCase().includes('script') || texto.toLowerCase().includes('codigo') || texto.toLowerCase().includes('criar'));
+
+            orbeBolinhas.style.display = "flex";
+            orbeLampada.style.display = "none";
+            txtStatus.innerText = "Sintetizando parâmetros...";
+
+            fetch('http://127.0.0.1:5000/perguntar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    mensagem: texto,
+                    e_dono: usuarioLogado 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                let respostaIA = data.resposta;
+                respostaIA = respostaIA.replace(/```lua/gi, "").replace(/```/g, "").trim();
+
+                orbeBolinhas.style.display = "none";
+                wrapperLuaX.style.display = "block";
+
+                if(querCodigo) {
+                    txtStatus.innerText = "Injetando linhas de código...";
+                    const balaoIa = document.createElement('div');
+                    balaoIa.className = 'balao balao-ia';
+                    balaoIa.innerHTML = `Script gerado pelo LuaX para seu mapa:<br>
+                    <div class="bloco-codigo-container">
+                        <div class="codigo-header"><span>Lua</span></div>
+                        <pre>${respostaIA}</pre>
+                    </div>`;
+                    chatContainer.appendChild(balaoIa);
+                } else {
+                    txtStatus.innerText = "LuaX pronto.";
+                    const balaoIa = document.createElement('div');
+                    balaoIa.className = 'balao balao-ia';
+                    balaoIa.innerText = respostaIA;
+                    chatContainer.appendChild(balaoIa);
+                }
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            })
+            .catch(err => {
+                txtStatus.innerText = "Erro na conexão local.";
+                alert("Verifique se o servidor.py está ativo!");
+            });
+        }
+
+        inputMsg.addEventListener("keypress", function(e) { if (e.key === "Enter") dispararChat(); });
+    </script>
+</body>
+</html>
