@@ -37,7 +37,6 @@
             flex-direction: column;
             border-right: 1px solid #2d3139;
             padding: 10px;
-            position: relative;
         }
 
         .btn-new-chat {
@@ -53,13 +52,8 @@
             margin-bottom: 15px;
         }
 
-        .btn-new-chat:hover:not(:disabled) {
+        .btn-new-chat:hover {
             background: #2d3139;
-        }
-
-        .btn-new-chat:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .chat-list-container {
@@ -83,27 +77,6 @@
             background: #2d3139;
         }
 
-        /* Bloqueio da Library/Configurações */
-        .sidebar.blocked .chat-list-container,
-        .sidebar.blocked .btn-new-chat {
-            display: none !important; /* Esconde completamente os chats antigos e novo chat se deslogado */
-        }
-
-        .blocked-message {
-            display: none;
-            color: #ff6b6b;
-            font-size: 13px;
-            text-align: center;
-            padding: 20px 10px;
-            border: 1px dashed #444c56;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .sidebar.blocked .blocked-message {
-            display: block;
-        }
-
         .user-section {
             border-top: 1px solid #2d3139;
             padding-top: 10px;
@@ -113,18 +86,13 @@
         }
 
         .btn-login {
-            background: #de4032; /* Cor estilo Google */
+            background: var(--accent-color);
             border: none;
             color: white;
             padding: 10px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            transition: opacity 0.2s;
-        }
-
-        .btn-login:hover {
-            opacity: 0.9;
         }
 
         /* ÁREA DO CHAT */
@@ -211,88 +179,62 @@
 </head>
 <body>
 
-    <div class="sidebar blocked" id="sidebar">
-        <button class="btn-new-chat" id="newChatBtn" onclick="createNewChat()">+ Novo Chat</button>
-        
-        <div class="blocked-message" id="blockedNotice">
-            🔒 Library e Configurações bloqueadas. Faça login com o Google para ver chats antigos.
-        </div>
-
+    <div class="sidebar">
+        <button class="btn-new-chat" onclick="createNewChat()">+ Novo Chat</button>
         <div class="chat-list-container" id="chatList">
             </div>
-
         <div class="user-section">
             <span id="userInfo" style="font-size: 13px; color: var(--text-muted);">Desconectado</span>
-            <button class="btn-login" id="loginBtn" onclick="simulateGoogleLogin()">🔴 Criar conta / Entrar com Google</button>
+            <button class="btn-login" id="loginBtn" onclick="simulateLogin()">Entrar como Dono (Simulado) 👑</button>
         </div>
     </div>
 
     <div class="chat-area">
         <div class="chat-header">
-            <span id="currentChatTitle">Painel LuaX</span>
-            <span id="statusIndicator" style="font-size: 12px; color: gold;">Modo Protegido</span>
+            <span id="currentChatTitle">Novo Chat</span>
+            <span id="statusIndicator" style="font-size: 12px; color: gold;">Modo Online (GitHub)</span>
         </div>
         
         <div class="messages-container" id="messagesBox">
-            <div class="message ai">Bem-vindo ao LuaX Studio. Por segurança, faça login com sua conta Google na barra lateral para salvar seu progresso e liberar o histórico de scripts.</div>
-        </div>
+            </div>
 
         <div class="input-container">
-            <input type="text" id="userInput" placeholder="Faça login para liberar todos os recursos..." onkeypress="handleKeyPress(event)">
+            <input type="text" id="userInput" placeholder="Envie um comando ou tire dúvidas de Lua do Roblox..." onkeypress="handleKeyPress(event)">
             <button class="btn-send" onclick="sendMessage()">Enviar</button>
         </div>
     </div>
 
     <script>
+        // CONFIGURAÇÃO DO SERVIDOR LOCAL
+        // Se o seu terminal der erro de conexão, mude para 'http://localhost:5000/chat'
         const SERVER_URL = 'http://127.0.0.1:5000/chat';
 
         let chats = JSON.parse(localStorage.getItem('luax_chats')) || {};
         let currentChatId = localStorage.getItem('luax_current_chat') || null;
-        let isLoggedIn = localStorage.getItem('luax_logged_in') === 'true';
 
+        // Inicializar a tela carregando o histórico
         window.onload = function() {
-            if (isLoggedIn) {
-                unlockInterface();
+            renderChatList();
+            if (currentChatId && chats[currentChatId]) {
+                loadChat(currentChatId);
             } else {
-                document.getElementById('userInput').disabled = true;
-                document.getElementById('userInput').placeholder = "Acesso bloqueado. Faça login primeiro.";
+                createNewChat();
+            }
+            
+            // Checar se o dono já estava logado
+            if(localStorage.getItem('luax_is_owner') === 'true') {
+                document.getElementById('userInfo').innerText = "Conectado como Dono 👑";
+                document.getElementById('loginBtn').style.display = 'none';
             }
         };
 
-        function simulateGoogleLogin() {
-            // Ativa o estado de logado
-            localStorage.setItem('luax_logged_in', 'true');
-            isLoggedIn = true;
-            unlockInterface();
-            
-            // Cria um chat inicial se a pessoa nunca tiver usado
-            if (Object.keys(chats).length === 0) {
-                createNewChat();
-            } else {
-                if (currentChatId && chats[currentChatId]) {
-                    loadChat(currentChatId);
-                } else {
-                    const firstId = Object.keys(chats)[0];
-                    loadChat(firstId);
-                }
-            }
-        }
-
-        function unlockInterface() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.remove('blocked'); // Remove as travas visuais e mostra a library
-            
-            document.getElementById('userInfo').innerText = "Conta Google: Conectado v3 👑";
+        function simulateLogin() {
+            localStorage.setItem('luax_is_owner', 'true');
+            document.getElementById('userInfo').innerText = "Conectado como Dono 👑";
             document.getElementById('loginBtn').style.display = 'none';
-            
-            document.getElementById('userInput').disabled = false;
-            document.getElementById('userInput').placeholder = "Envie um comando ou tire dúvidas de Lua do Roblox...";
-            
-            renderChatList();
         }
 
         function renderChatList() {
-            if (!isLoggedIn) return;
             const list = document.getElementById('chatList');
             list.innerHTML = '';
             
@@ -308,7 +250,6 @@
         }
 
         function createNewChat() {
-            if (!isLoggedIn) return;
             const id = 'chat_' + Date.now();
             chats[id] = {
                 title: 'Novo Chat',
@@ -321,7 +262,6 @@
         }
 
         function loadChat(id) {
-            if (!isLoggedIn) return;
             currentChatId = id;
             localStorage.setItem('luax_current_chat', id);
             
@@ -356,16 +296,17 @@
         }
 
         async function sendMessage() {
-            if (!isLoggedIn) return;
             const input = document.getElementById('userInput');
             const text = input.value.trim();
             if (!text) return;
 
             input.value = '';
 
+            // 1. Salvar e mostrar a mensagem do usuário
             appendMessageToDOM(text, 'user');
             chats[currentChatId].messages.push({ text: text, sender: 'user' });
             
+            // Atualizar o título do chat com a primeira frase digitada
             if (chats[currentChatId].title === 'Novo Chat') {
                 chats[currentChatId].title = text.substring(0, 20) + (text.length > 20 ? '...' : '');
             }
@@ -373,10 +314,12 @@
             saveToLocalStorage();
             renderChatList();
 
+            // 2. Criar balão de carregamento da IA
             appendMessageToDOM("Pensando...", 'ai');
             const box = document.getElementById('messagesBox');
             const lastMessageDiv = box.lastChild;
 
+            // 3. Fazer a requisição para o seu servidor Python local
             try {
                 const response = await fetch(SERVER_URL, {
                     method: 'POST',
@@ -387,6 +330,8 @@
                 if (!response.ok) throw new Error();
 
                 const data = await response.json();
+                
+                // Substituir o "Pensando..." pela resposta real da IA
                 lastMessageDiv.innerText = data.response;
                 chats[currentChatId].messages.push({ text: data.response, sender: 'ai' });
                 saveToLocalStorage();
