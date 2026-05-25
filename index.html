@@ -3,312 +3,385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuaX Studio - IA de Roblox</title>
+    <title>LuaX Studio - IA</title>
     <style>
-        body {
+        :root {
+            --bg-dark: #111216;
+            --sidebar-bg: #1a1c23;
+            --chat-bg: #222531;
+            --accent-color: #007acc;
+            --text-color: #ffffff;
+            --text-muted: #8b949e;
+        }
+
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0c0c0e;
-            color: #e1e1e6;
+        }
+
+        body {
             display: flex;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
             height: 100vh;
             overflow: hidden;
-            position: relative;
         }
 
-        aside {
-            width: 280px;
-            background-color: #141417;
-            border-right: 1px solid #222226;
+        /* BARRA LATERAL */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 15px;
-            box-sizing: border-box;
-            z-index: 10;
+            border-right: 1px solid #2d3139;
+            padding: 10px;
         }
 
-        .logo-area {
-            font-size: 26px;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 25px;
-            user-select: none;
-        }
-        .logo-lua { color: #f4e8c1; text-shadow: 0 0 10px rgba(244, 232, 193, 0.6); }
-        .logo-x {
-            font-family: 'Impact', 'Arial Black', sans-serif;
-            color: #55555e;
-            text-shadow: 2px 2px 0px #222;
-            display: inline-block;
-            transform: scaleY(1.2) scaleX(1.1);
-            transform-origin: bottom left;
-            padding-right: 5px;
-        }
-
-        .btn-novo-chat { background: linear-gradient(135deg, #7b42bc, #522b80); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; }
-        .busca-chats { background-color: #1c1c22; border: 1px solid #2d2d35; padding: 8px 12px; border-radius: 6px; color: white; width: 100%; box-sizing: border-box; margin-bottom: 20px; outline: none; }
-        
-        .menu-links { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
-        .item-menu { padding: 10px 12px; border-radius: 6px; cursor: pointer; color: #a3a3b2; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
-        .item-menu:hover, .item-menu.ativo { background-color: #1c1c22; color: #9966cc; }
-        
-        .marca-powered {
-            font-size: 11px;
-            color: #4a4a5a;
-            text-align: center;
+        .btn-new-chat {
+            background: transparent;
+            border: 1px solid #444c56;
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            transition: background 0.2s;
             margin-bottom: 15px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
         }
 
-        .area-login-google { border-top: 1px solid #222226; padding-top: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .btn-google { background-color: #ffffff; color: #1f1f1f; border: none; padding: 10px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; font-size: 13px; }
+        .btn-new-chat:hover:not(:disabled) { background: #2d3139; }
+        .btn-new-chat:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        main {
-            flex: 1;
+        .chat-list-container { flex: 1; overflow-y: auto; }
+
+        .chat-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover, .chat-item.active { background: #2d3139; }
+
+        /* Bloqueios visuais se deslogado */
+        .sidebar.blocked .chat-list-container,
+        .sidebar.blocked .btn-new-chat {
+            display: none !important;
+        }
+
+        .blocked-message {
+            display: none;
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px 10px;
+            border: 1px dashed #444c56;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar.blocked .blocked-message { display: block; }
+
+        .user-section {
+            border-top: 1px solid #2d3139;
+            padding-top: 10px;
             display: flex;
             flex-direction: column;
-            background-color: #0c0c0e;
-            position: relative;
+            gap: 8px;
         }
 
-        .palco-ia {
-            background-color: #101014;
-            border-bottom: 1px solid #1c1c22;
-            padding: 15px 30px;
+        .btn-login {
+            background: #de4032;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            gap: 25px;
-            min-height: 120px;
-            position: relative;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .texto-status { font-size: 14px; color: #8c8c9a; font-weight: 500; }
-
-        .wrapper-rosto {
-            position: relative;
-            width: 75px;
-            height: 85px;
-            display: none;
+        /* POPUP SIMULADO DO GOOGLE */
+        .google-popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; display: none;
         }
 
-        .face-roxa {
-            width: 100%; height: 100%; background-color: #14141a; border: 2px solid #9966cc;
-            border-radius: 40% 40% 50% 50%; box-shadow: 0 0 15px rgba(153, 102, 204, 0.3);
-            position: relative; display: flex; flex-direction: column; align-items: center;
+        .google-box {
+            background: white; color: #333;
+            width: 380px; padding: 30px; border-radius: 8px;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        .sobrancelhas { display: flex; gap: 12px; position: absolute; top: 22px; }
-        .sobrancelha { width: 16px; height: 3px; background: #9966cc; border-radius: 2px; }
-        .olhos { display: flex; gap: 18px; position: absolute; top: 32px; }
-        .olho { width: 10px; height: 10px; background: #b380ff; border-radius: 50%; box-shadow: 0 0 10px #9966cc; }
-        .boca { width: 18px; height: 3px; background: #9966cc; position: absolute; bottom: 22px; border-radius: 2px; }
-
-        .tag-dono {
-            position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #ffdb58, #ff9900);
-            color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 10px;
-            box-shadow: 0 0 8px #ffdb58; text-transform: uppercase; display: none; white-space: nowrap;
+        .google-box h2 { font-size: 20px; margin-bottom: 5px; color: #202124; }
+        .google-box p { font-size: 14px; color: #5f6368; margin-bottom: 20px; }
+        
+        .google-input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border: 1px solid #dadce0; border-radius: 4px; font-size: 15px;
         }
-        .wrapper-rosto.mostrar-dono .tag-dono { display: block; }
 
-        .orbe-sistema { width: 50px; height: 40px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .bolinhas-container { display: none; gap: 5px; position: absolute; }
-        .bolinha-orbe { width: 8px; height: 8px; background: #9966cc; border-radius: 50%; box-shadow: 0 0 8px #9966cc; }
-        .lampada-orbe { font-size: 24px; display: none; filter: drop-shadow(0 0 10px #ffdb58); position: absolute; }
-
-        .container-mensagens { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 18px; position: relative; }
-        .balao { max-width: 75%; padding: 14px 18px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
-        .balao-user { background-color: #583ba3; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .balao-ia { background-color: #18181c; color: #e1e1e6; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #23232a; width: 100%; position: relative; }
-
-        .bloco-codigo-container { margin-top: 10px; background-color: #09090b; border-radius: 8px; border: 1px solid #2d2d35; overflow: hidden; position: relative; }
-        .codigo-header { background-color: #1c1c22; padding: 6px 15px; font-size: 12px; color: #a3a3b2; font-weight: bold; display: flex; justify-content: space-between; }
-        pre { margin: 0; padding: 15px; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; min-height: 30px; }
-
-        .caixa-entrada { background-color: #101014; padding: 20px; display: flex; gap: 12px; border-top: 1px solid #1c1c22; }
-        .caixa-entrada input { flex: 1; background-color: #1c1c22; border: 1px solid #2d2d35; padding: 14px 20px; border-radius: 30px; color: white; font-size: 15px; outline: none; }
-        .caixa-entrada button { background: #9966cc; color: white; border: none; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; }
-
-        .bloqueio-login {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(12, 12, 14, 0.95); z-index: 9999;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            gap: 20px;
+        .google-btn-submit {
+            background: #1a73e8; color: white; border: none;
+            width: 100%; padding: 12px; border-radius: 4px;
+            font-weight: bold; cursor: pointer;
         }
-        .caixa-bloqueio {
-            background-color: #141417; border: 1px solid #2d2d35; padding: 35px;
-            border-radius: 12px; text-align: center; box-shadow: 0 0 30px rgba(153, 102, 204, 0.2);
-            max-width: 400px;
+
+        /* ÁREA DO CHAT */
+        .chat-area { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        .chat-header {
+            padding: 15px; border-bottom: 1px solid #2d3139;
+            font-size: 16px; font-weight: bold; display: flex;
+            align-items: center; justify-content: space-between;
         }
-        .caixa-bloqueio h2 { margin: 0 0 10px 0; color: #fff; font-size: 22px; }
-        .caixa-bloqueio p { color: #a3a3b2; font-size: 14px; margin: 0 0 25px 0; }
-        .btn-fechar-bloqueio { background: none; border: none; color: #7c7c8a; cursor: pointer; font-size: 13px; margin-top: 15px; text-decoration: underline; }
+
+        .messages-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 8px; font-size: 15px; line-height: 1.5; }
+        .message.user { background-color: var(--accent-color); align-self: flex-end; }
+        .message.ai { background-color: var(--chat-bg); align-self: flex-start; border: 1px solid #2d3139; }
+
+        .input-container { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #2d3139; }
+        input[type="text"] {
+            flex: 1; background-color: var(--chat-bg); border: 1px solid #444c56;
+            border-radius: 6px; padding: 12px; color: white; outline: none;
+        }
+        input[type="text"]:focus { border-color: var(--accent-color); }
+        .btn-send { background-color: var(--accent-color); color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="bloqueio-login" id="janelaLogin">
-        <div class="caixa-bloqueio">
-            <h2>Faça login para poder acessar</h2>
-            <p>A Biblioteca de scripts e o painel de configurações requerem autenticação segura em nuvem.</p>
-            <button class="btn-google" style="width: 100%; padding: 12px 0;" onclick="fazerLoginSimulado()">
-                <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/v6_web-24dp.svg" alt="Google" style="vertical-align: middle; margin-right: 8px;">
-                Entrar com o Google
+    <div class="sidebar blocked" id="sidebar">
+        <button class="btn-new-chat" id="newChatBtn" onclick="createNewChat()">+ Novo Chat</button>
+        
+        <div class="blocked-message" id="blockedNotice">
+            🔒 Biblioteca e Configurações ocultas. Faça login para continuar.
+        </div>
+
+        <div class="chat-list-container" id="chatList"></div>
+
+        <div class="user-section">
+            <span id="userInfo" style="font-size: 13px; color: var(--text-muted);">Desconectado</span>
+            <button class="btn-login" id="loginBtn" onclick="openGooglePopup()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1c-6.075 0-11 4.925-11 11s4.925 11 11 11c6.34 0 10.556-4.43 10.556-10.73 0-.726-.075-1.282-.165-1.695H12.24z"/></svg>
+                Fazer login com o Google
             </button>
-            <button class="btn-fechar-bloqueio" onclick="fecharBloqueio()">Voltar para o Chat</button>
         </div>
     </div>
 
-    <aside>
-        <div>
-            <div class="logo-area"><span class="logo-lua">🌕</span><span class="logo-x">X</span> Studio</div>
-            <button class="btn-novo-chat" onclick="location.reload()">＋ Novo Chat</button>
-            <input type="text" class="busca-chats" placeholder="Pesquisar chats salvos...">
-            <div class="menu-links">
-                <div class="item-menu ativo" id="btnChat">💬 Conversas Atuais</div>
-                <div class="item-menu" id="btnLibrary" onclick="verificarAcessoPro('Library')">📚 Library (Biblioteca)</div>
-                <div class="item-menu" id="btnConfig" onclick="verificarAcessoPro('Configurações')">⚙️ Configurações</div>
-            </div>
+    <div class="chat-area">
+        <div class="chat-header">
+            <span id="currentChatTitle">Painel LuaX</span>
+            <span id="statusIndicator" style="font-size: 12px; color: #ff6b6b;">Acesso Restrito</span>
         </div>
         
-        <div>
-            <div class="marca-powered">POWERED BY LUAX & GEMINI</div>
-            <div class="area-login-google">
-                <button class="btn-google" id="btnGooglePrincipal" onclick="abrirBloqueio()">Entrar com o Google</button>
-            </div>
-        </div>
-    </aside>
-
-    <main>
-        <div class="palco-ia">
-            <div class="wrapper-rosto" id="wrapperLuaX">
-                <div class="tag-dono">Dono / Owner</div>
-                <div class="face-roxa">
-                    <div class="sobrancelhas">
-                        <div class="sobrancelha esq"></div>
-                        <div class="sobrancelha dir"></div>
-                    </div>
-                    <div class="olhos">
-                        <div class="olho" id="olhoEsq"></div>
-                        <div class="olho" id="olhoDir"></div>
-                    </div>
-                    <div class="boca" id="bocaIA"></div>
-                </div>
-            </div>
-
-            <div class="orbe-sistema">
-                <div class="bolinhas-container" id="orbeBolinhas">
-                    <div class="bolinha-orbe" style="transform: translateY(-12px);"></div>
-                    <div class="bolinha-orbe" style="transform: translateX(12px) translateY(6px);"></div>
-                    <div class="bolinha-orbe" style="transform: translateX(-12px) translateY(6px);"></div>
-                </div>
-                <div class="lampada-orbe" id="orbeLampada">💡</div>
-            </div>
-
-            <div class="texto-status" id="txtStatus">Aguardando mensagem na órbita...</div>
+        <div class="messages-container" id="messagesBox">
+            <div class="message ai" id="welcomeMsg">Por motivos de segurança contra invasões, faça login com a sua conta Google para liberar o console e carregar seus scripts.</div>
         </div>
 
-        <div class="container-mensagens" id="chatContainer"></div>
-
-        <div class="caixa-entrada">
-            <input type="text" id="inputMsg" placeholder="Peça um script ou converse com o LuaX...">
-            <button onclick="dispararChat()">Enviar</button>
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Bloqueado. Faça login na barra lateral..." onkeypress="handleKeyPress(event)">
+            <button class="btn-send" onclick="sendMessage()">Enviar</button>
         </div>
-    </main>
+    </div>
+
+    <div class="google-popup-overlay" id="googlePopup">
+        <div class="google-box">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" width="90" style="margin-bottom:15px;" alt="Google">
+            <h2>Fazer login</h2>
+            <p>Use sua Conta do Google para entrar no LuaX Studio</p>
+            <input type="email" class="google-input" id="googleEmail" placeholder="E-mail ou telefone" required>
+            <button class="google-btn-submit" onclick="submitGoogleLogin()">Avançar</button>
+        </div>
+    </div>
 
     <script>
-        const chatContainer = document.getElementById('chatContainer');
-        const inputMsg = document.getElementById('inputMsg');
-        const wrapperLuaX = document.getElementById('wrapperLuaX');
-        const orbeBolinhas = document.getElementById('orbeBolinhas');
-        const orbeLampada = document.getElementById('orbeLampada');
-        const txtStatus = document.getElementById('txtStatus');
-        const bocaIA = document.getElementById('bocaIA');
-        const janelaLogin = document.getElementById('janelaLogin');
+        // ==========================================
+        // CONFIGURAÇÃO DE SEGURANÇA: COLOQUE SEU EMAIL AQUI!
+        // ==========================================
+        const EMAIL_DO_DONO = "jvzinnndaquebrada@gmail.com"; 
+        const SERVER_URL = 'http://127.0.0.1:5000/chat';
 
-        let usuarioLogado = false;
+        let chats = JSON.parse(localStorage.getItem('luax_chats')) || {};
+        let currentChatId = localStorage.getItem('luax_current_chat') || null;
+        let loginStatus = localStorage.getItem('luax_role') || null; // 'dono', 'membro' ou null
 
-        function verificarAcessoPro(nomeAba) {
-            if(!usuarioLogado) { abrirBloqueio(); } 
-            else { alert(`Bem-vindo à aba ${nomeAba}! Acesso concedido ao Dono.`); }
+        window.onload = function() {
+            if (loginStatus) {
+                unlockInterface(loginStatus);
+            } else {
+                document.getElementById('userInput').disabled = true;
+            }
+        };
+
+        function openGooglePopup() {
+            document.getElementById('googlePopup').style.display = 'flex';
         }
 
-        function abrirBloqueio() { janelaLogin.style.display = "flex"; }
-        function fecharBloqueio() { janelaLogin.style.display = "none"; }
+        function submitGoogleLogin() {
+            const emailInput = document.getElementById('googleEmail').value.trim().toLowerCase();
+            if (!emailInput || !emailInput.includes('@')) {
+                alert("Por favor, insira um e-mail válido da sua conta Google.");
+                return;
+            }
 
-        function fazerLoginSimulado() {
-            usuarioLogado = true;
-            fecharBloqueio();
-            document.getElementById('btnGooglePrincipal').innerText = "Conectado como Dono 👑";
-            document.getElementById('btnGooglePrincipal').style.background = "#ffdb58";
-            wrapperLuaX.classList.add('mostrar-dono');
-            txtStatus.innerText = "Acesso de Criador detectado. Olá, Dono!";
+            document.getElementById('googlePopup').style.display = 'none';
+
+            // VERIFICAÇÃO DO EMAIL
+            if (emailInput === EMAIL_DO_DONO.toLowerCase()) {
+                localStorage.setItem('luax_role', 'dono');
+                loginStatus = 'dono';
+                alert("Acesso de Administrador Confirmado! 👑");
+            } else {
+                localStorage.setItem('luax_role', 'membro');
+                loginStatus = 'membro';
+                alert("Logado com sucesso como Visitante comercial.");
+            }
+
+            unlockInterface(loginStatus);
+
+            if (Object.keys(chats).length === 0) {
+                createNewChat();
+            } else {
+                loadChat(currentChatId || Object.keys(chats)[0]);
+            }
         }
 
-        function dispararChat() {
-            const texto = inputMsg.value.trim();
-            if(texto === "") return;
+        function unlockInterface(role) {
+            const sidebar = document.getElementById('sidebar');
+            
+            if (role === 'dono') {
+                sidebar.classList.remove('blocked'); // Dono vê tudo (Library, Configs)
+                document.getElementById('userInfo').innerText = "Dono do Sistema 👑";
+                document.getElementById('statusIndicator').innerText = "Modo Desenvolvedor (Total)";
+                document.getElementById('statusIndicator').style.color = "gold";
+            } else {
+                // Visitante Comum fica com travas eternas na barra lateral
+                sidebar.classList.add('blocked'); 
+                document.getElementById('userInfo').innerText = "Conta: Membro Comum ✔️";
+                document.getElementById('statusIndicator').innerText = "Modo Visitante (Limitado)";
+                document.getElementById('statusIndicator').style.color = "#a3b1cc";
+                document.getElementById('blockedNotice').innerText = "🔒 Erro: Apenas o Dono do sistema possui permissão para abrir a Library ou Configurações.";
+            }
 
-            const balaoUser = document.createElement('div');
-            balaoUser.className = 'balao balao-user';
-            balaoUser.innerText = texto;
-            chatContainer.appendChild(balaoUser);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            inputMsg.value = "";
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('userInput').disabled = false;
+            document.getElementById('userInput').placeholder = "Envie um comando ou tire dúvidas de Lua do Roblox...";
+            document.getElementById('welcomeMsg').innerText = `Conexão estabelecida com sucesso. Como posso ajudar o seu projeto hoje?`;
+            
+            renderChatList();
+        }
 
-            const eComando = texto.startsWith('!');
-            const querCodigo = !eComando && (texto.toLowerCase().includes('script') || texto.toLowerCase().includes('codigo') || texto.toLowerCase().includes('criar'));
-
-            orbeBolinhas.style.display = "flex";
-            orbeLampada.style.display = "none";
-            txtStatus.innerText = "Sintetizando parâmetros...";
-
-            fetch('http://127.0.0.1:5000/perguntar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    mensagem: texto,
-                    e_dono: usuarioLogado 
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                let respostaIA = data.resposta;
-                respostaIA = respostaIA.replace(/```lua/gi, "").replace(/```/g, "").trim();
-
-                orbeBolinhas.style.display = "none";
-                wrapperLuaX.style.display = "block";
-
-                if(querCodigo) {
-                    txtStatus.innerText = "Injetando linhas de código...";
-                    const balaoIa = document.createElement('div');
-                    balaoIa.className = 'balao balao-ia';
-                    balaoIa.innerHTML = `Script gerado pelo LuaX para seu mapa:<br>
-                    <div class="bloco-codigo-container">
-                        <div class="codigo-header"><span>Lua</span></div>
-                        <pre>${respostaIA}</pre>
-                    </div>`;
-                    chatContainer.appendChild(balaoIa);
-                } else {
-                    txtStatus.innerText = "LuaX pronto.";
-                    const balaoIa = document.createElement('div');
-                    balaoIa.className = 'balao balao-ia';
-                    balaoIa.innerText = respostaIA;
-                    chatContainer.appendChild(balaoIa);
-                }
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            })
-            .catch(err => {
-                txtStatus.innerText = "Erro na conexão local.";
-                alert("Verifique se o servidor.py está ativo!");
+        function renderChatList() {
+            if (loginStatus !== 'dono') return; // Se não for dono, a lista nem é gerada no HTML
+            const list = document.getElementById('chatList');
+            list.innerHTML = '';
+            
+            Object.keys(chats).reverse().forEach(id => {
+                const item = document.createElement('div');
+                item.classList.add('chat-item');
+                if (id === currentChatId) item.classList.add('active');
+                item.innerText = chats[id].title || "Chat sem título";
+                item.onclick = () => loadChat(id);
+                list.appendChild(item);
             });
         }
 
-        inputMsg.addEventListener("keypress", function(e) { if (e.key === "Enter") dispararChat(); });
+        function createNewChat() {
+            if (loginStatus !== 'dono') return;
+            const id = 'chat_' + Date.now();
+            chats[id] = { title: 'Novo Chat', messages: [] };
+            currentChatId = id;
+            saveToLocalStorage();
+            renderChatList();
+            loadChat(id);
+        }
+
+        function loadChat(id) {
+            if (loginStatus !== 'dono') return;
+            currentChatId = id;
+            localStorage.setItem('luax_current_chat', id);
+            document.getElementById('currentChatTitle').innerText = chats[id].title;
+            
+            const box = document.getElementById('messagesBox');
+            box.innerHTML = '';
+            chats[id].messages.forEach(msg => appendMessageToDOM(msg.text, msg.sender));
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function appendMessageToDOM(text, sender) {
+            const box = document.getElementById('messagesBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.innerText = text;
+            box.appendChild(msgDiv);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function saveToLocalStorage() {
+            if (loginStatus === 'dono') {
+                localStorage.setItem('luax_chats', JSON.stringify(chats));
+            }
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            appendMessageToDOM(text, 'user');
+
+            if (loginStatus === 'dono') {
+                chats[currentChatId].messages.push({ text: text, sender: 'user' });
+                if (chats[currentChatId].title === 'Novo Chat') {
+                    chats[currentChatId].title = text.substring(0, 20) + (text.length > 20 ? '...' : '');
+                }
+                saveToLocalStorage();
+                renderChatList();
+            }
+
+            appendMessageToDOM("Pensando...", 'ai');
+            const box = document.getElementById('messagesBox');
+            const lastMessageDiv = box.lastChild;
+
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                
+                lastMessageDiv.innerText = data.response;
+                
+                if (loginStatus === 'dono') {
+                    chats[currentChatId].messages.push({ text: data.response, sender: 'ai' });
+                    saveToLocalStorage();
+                }
+            } catch (error) {
+                lastMessageDiv.innerText = "Erro: Ligue o seu servidor.py local no computador!";
+                lastMessageDiv.style.color = "#ff6b6b";
+            }
+        }
     </script>
 </body>
 </html>
